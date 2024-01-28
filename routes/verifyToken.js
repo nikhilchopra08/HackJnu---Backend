@@ -1,0 +1,48 @@
+const jwt = require("jsonwebtoken");
+
+const verifyToken = (req, res, next) => {
+    const authHeader = req.headers.token;
+    if (!authHeader) {
+        return res.status(401).json("You are not authorized");
+    }
+    const token = authHeader.split(" ")[1];
+    jwt.verify(token, process.env.JWT_SEC, (err, user) => {
+        if (err) {
+            return res.status(401).json("Authentication failed");
+        }
+        req.user = user;
+        next();
+    });
+};
+
+const verifyTokenAndAuthorization = (req, res, next) => {
+    verifyToken(req, res, () => {
+        if (req.user.id === req.params.id || req.user.isadmin) {
+            next();
+        } else {
+            res.status(403).json("Not allowed");
+        }
+    });
+};
+
+const verifyTokenAndCheck = (req, res, next) => {
+    verifyToken(req, res, () => {
+        if (req.user.id === req.params.id || !req.user.isadmin) {
+            next();
+        } else {
+            res.status(403).json("Not allowed");
+        }
+    });
+};
+
+const verifyTokenAndAdmin = (req, res, next) => {
+    verifyToken(req, res, () => {
+        if (req.user.isadmin) {
+            next();
+        } else {
+            res.status(403).json("You are not allowed to do that!");
+        }
+    });
+};
+
+module.exports = { verifyToken, verifyTokenAndAuthorization, verifyTokenAndAdmin, verifyTokenAndCheck };
